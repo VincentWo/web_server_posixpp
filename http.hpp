@@ -160,11 +160,28 @@ namespace http
 		void set_body(const std::string&&);
   };
 
+	class Version
+	{
+	public:
+		constexpr Version(int first_digit = 0, int second_digit = 0) noexcept : first_{first_digit}, second_{second_digit} 
+		{};
+		constexpr int first()  const noexcept { return first_; };
+		constexpr int second() const noexcept { return second_;}; 
+
+	private:
+		int first_;
+		int second_;
+	};
+
 	struct parse_error : std::invalid_argument
 	{
 		public:
+			parse_error() : std::invalid_argument{"parse error"}
+			{
+			};
 			virtual const char* what() const noexcept override { return "parse error";}
-	}
+	};
+
 	Socket& operator<<(Socket&, const Response&);
 	Socket& operator>>(Socket&, Request&);
 }

@@ -92,7 +92,7 @@ namespace http
 	{
 		using boost::lexical_cast;
 
-		method method  = lexical_cast<method>(get_word(lhs));
+		method http_method  = lexical_cast<method>(get_word(lhs));
 
 		if(lhs.receive<char>() == ' ')
 		{
