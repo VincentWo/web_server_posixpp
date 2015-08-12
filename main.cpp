@@ -6,14 +6,14 @@
 #include <fstream>
 #include <cstdio>
 
-#include "../Socket/Socket.hpp"
-#include "../Socket/File.hpp"
-#include "../Socket/error.hpp"
+#include "posixpp/socket.hpp"
+#include "posixpp/file.hpp"
+#include "posixpp/error.hpp"
 #include "http.hpp"
 
 constexpr int port = 80;
 constexpr char const * const web_root =  "/home/vincent/www/";
-void handle_connection(Connection&); // Handle web requests
+extern void handle_connection(Connection&, std::ostream& log = std::clog); // Handle web requests
 std::string get_content(std::ifstream&); // Get file content as string
 bool starts_with(const std::string&, const std::string&);
 using std::cout;
@@ -26,12 +26,13 @@ int main(void)
 
         cout << "Accepting web request on port " << port << '\n';    
 
-        Socket sock{PF_INET, SOCK_STREAM, 0};
-
-        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR);
-
-        sock.bind(Ipv4{INADDR_ANY, 80}); 
-
+        Socket sock{PF_INET, SOCK_STREAM};
+				//Socket sock{Socket::INET, SOCKET::STREAM};
+        
+				sock.setsockopt(SOL_SOCKET, SO_REUSEADDR);
+				//sock.set_option(Socket::REUSEADDR);
+        
+				sock.bind(Ipv4{80}); 
         sock.listen(20);
 
         while(true)
@@ -41,8 +42,7 @@ int main(void)
         }
     }catch(socket_error& e)
     {
-        cout << e.what() << std::endl;
-        cout << e.err_num() << ": " << strerror(e.err_num());
+        cerr << e.what() << std::endl;
     }
     return 0;
 }
@@ -52,7 +52,7 @@ int main(void)
  * and this function replies over the connected socket. Finally, the
  * passed socket is closed at the end of the function.
  */
-
+#if 0
 void handle_connection(Connection& conn)
 {
     using std::cout;
@@ -149,7 +149,7 @@ void handle_connection(Connection& conn)
         }
     }
 }
-
+#endif
 bool starts_with(const std::string& str_1, const std::string& str_2)
 {
     return (std::strncmp(str_1.c_str(), str_2.c_str(), str_2.size()) == 0);
