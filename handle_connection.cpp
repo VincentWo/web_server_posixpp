@@ -35,7 +35,7 @@ void handle_connection(Connection& conn, std::ostream& log = std::cerr)
 		response.status = status::not_found;
 		response.set_body(error_body(status::not_found));
 	}
-	catch(permission_denied&)
+	catch(access_denied&)
 	{
 		response.status = status::forbidden;
 		response.set_body(error_body(status::not_found));

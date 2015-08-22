@@ -1,4 +1,6 @@
 #include <type_traits>
+#include <unordered_map>
+#include <string>
 
 #include <boost/lexical_cast.hpp>
 
@@ -37,7 +39,7 @@ namespace http
 	}
 
 	static inline
-		std::string static_error_body(status original_status_code,
+    std::string static_error_body(status original_status_code,
 				status status_code)
 		{
 			return
@@ -72,7 +74,7 @@ namespace http
 		{
 			http_error = status::not_found;
 		}
-		catch(permission_denied&)
+		catch(access_denied&)
 		{
 			http_error = status::forbidden;
 		}
@@ -90,9 +92,9 @@ namespace http
 
 	Socket& operator>>(Socket& lhs, http::Request& rhs)
 	{
-		using boost::lexical_cast;
+        using boost::lexical_cast;
 
-		method http_method  = lexical_cast<method>(get_word(lhs));
+		rhs.set_method(lexical_cast<method>(get_word(lhs)));
 
 		if(lhs.receive<char>() == ' ')
 		{
@@ -109,19 +111,22 @@ namespace http
 		}
 		Version http_version{lexical_cast<int>(get_word(lhs, ".")),
 		                     lexical_cast<int>(get_word(lhs, "\r\n"))};
-		if(http_version != Version{1, 1});
+		if(http_version != Version{1, 1})
 		{
 			throw parse_error{};
 		}
 
 		std::unordered_map<std::string, std::string> header_values;
-		while(!(auto header_line = lhs.receive_line()).empty())
+        
+        auto header_line = lhs.receive_line();
+		while(!header_line.empty())
 		{
 			auto index = header_line.find(':');
 			auto value = header_line.substr(index + 1);
-			header_line.remove(index);
+			header_line.erase(index);
 
 			header_values[header_line] = value;
+            header_line = lhs.receive_line();
 		}
 		return lhs;
 	}	
