@@ -7,49 +7,74 @@
 
 using namespace http;
 
-File get_resource(const std::string&);
-
+std::string uri_to_path(const std::string&);
+std::string get_resource(const std::string&);
 void handle_connection(Connection& conn, std::ostream& log = std::cerr)
 {
-	http::Request request{};
-	conn.first >> request;
-	http::Response response{};
+    http::Request request{};
+    conn.first >> request;
 
-	if(request.method() != method::GET && request.method() != method::HEAD)
-	{
-		std::cerr << "ERROR UNSUPPORTED METHOD USED\n";
-		return;
-	}
+    http::Response response{};
 
-	try
-	{
-		File resource = get_resource(request.URI());
-		response.status = status::ok;
-		if(request.method() != method::HEAD)
-		{
-			response.set_body(resource.to_string());
-		}
-	}
-	catch(not_found&)
-	{
-		response.status = status::not_found;
-		response.set_body(error_body(status::not_found));
-	}
-	catch(access_denied&)
-	{
-		response.status = status::forbidden;
-		response.set_body(error_body(status::not_found));
-	}
-	catch(std::exception& e)
-	{
-		response.status = status::server_error;
-		response.set_body(error_body(status::server_error));
+    if(request.method() != method::GET && request.method() != method::HEAD)
+    {
+        log << "ERROR UNSUPPORTED METHOD USED\n";
+        return;
+    }
 
-		log << "Getting the resource failed with an unknown exception.\n";
-		log << ".what(): " << e.what() << '\n';
+    std::string  body;
+    http::status status_code;
+    try
+    {
+        body        = get_resource(request.URI());
+        status_code = status::ok;
+    }catch(not_found&){
+        body        = error_body(status::not_found);
+        status_code = status::not_found;
+    }catch(access_denied&){
+        body        = error_body(status::forbidden);
+        status_code = status::forbidden;
+    }catch(std::exception& e)
+    {
+        body        = error_body(status::server_error);
+        status_code = status::server_error;
+        log << "An unknown exception was thrown.\n";
+        log << ".what(): " << e.what();
+    }
 
-		conn.first << response;
-		throw;
-	}
-	conn.first << response;
+    response.set_status(status_code);
+    if(request.method() != method::HEAD)
+    {
+        response.set_body(std::move(body));
+    }
+    
+    conn.first << response;
+}
+
+std::string get_resource(const std::string& uri)
+{
+    try
+    {
+        File resource{uri_to_path(uri)};
+        return resource.to_string();
+    }
+    catch(is_dir&)
+    {
+        return get_resource(uri+"/index.html");
+    }
+}
+std::string uri_to_path(const std::string& uri)
+{
+    //TODO: Fix for all types of uris
+    std::cout << uri << std::endl;
+    if(uri.front() == '.' || uri.find("/.") != uri.npos)
+    {
+        throw access_denied{};
+    }
+    auto path = webroot + uri;
+    if(path.back() == '/')
+    {
+        path += "index.html";
+    }
+    return webroot + uri;
 }

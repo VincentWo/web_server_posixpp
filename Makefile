@@ -4,6 +4,8 @@ CXXFLAGS= -std=c++1y -Werror -pedantic -Wall -Wextra -Wmissing-include-dirs -Wsu
 CPPFLAGS= -I /home/vincent/coding  -I /home/vincent/coding/web_server_posixpp
 
 all: server_cpp server_c
+	sudo setcap cap_net_bind_service+ep server_cpp
+	sudo setcap cap_net_bind_service+ep server_c
 server_cpp: main.o http.o handle_connection.o
 	g++ main.o  http.o handle_connection.o -L ../posixpp -lsocxx -o server_cpp
 server_c: tinyweb.o

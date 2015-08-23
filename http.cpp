@@ -1,6 +1,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <string>
+#include <sstream>
 
 #include <boost/lexical_cast.hpp>
 
@@ -8,8 +9,6 @@
 #include <posixpp/error.hpp>
 
 #include <http.hpp>
-
-constexpr const char* web_root = "/home/vincent/www/";
 
 namespace http
 {
@@ -31,9 +30,14 @@ namespace http
 	}
 	std::string header(status status_code)
 	{
-		std::string hdr;
+        using namespace std;
+		std::string hdr{};
 		hdr +=
-			"HTTP/1.0 " + to_string(status_code) + ' ' + get_name(status_code) + """\r\n"""
+			"HTTP/1.0 "            +
+            to_string(status_code) +
+            ' '                    +
+            get_name(status_code)  +
+            """\r\n"""
 			"""Server: Tiny webserver\r\n\r\n""";
 		return hdr;
 	}
@@ -65,7 +69,7 @@ namespace http
 		status http_error;
 		try
 		{
-			std::string path{web_root};
+			std::string path{webroot};
 			path += "error/" + to_string(status_code) + ".html";
 			File error_file{path, File::RDONLY};
 			return error_file.to_string();
@@ -100,11 +104,9 @@ namespace http
 		{
 			throw parse_error{};
 		}
-		std::string request_URI{get_word(lhs)};
-		if(lhs.receive<char>() == ' ')
-		{
-			throw parse_error{};
-		}
+		rhs.set_uri(get_word(lhs));
+        
+        //TODO: Clean the mess
 		if(get_word(lhs, "/") != "HTTP")
 		{
 			throw parse_error{};
@@ -174,4 +176,11 @@ namespace http
 		}
 		return lhs;
 	}
+
+    Socket& operator<<(Socket& lhs, const Response& rhs)
+    {
+        lhs << header(rhs.get_status());
+        lhs << rhs.body();
+        return lhs;
+    }
 }

@@ -6,6 +6,8 @@
 
 #include "version.hpp"
 
+constexpr const char* webroot  ="/home/vincent/www/";
+
 namespace http
 {
   // TODO: This whole section is a big great hassle.
@@ -148,7 +150,7 @@ namespace http
         void set_method(enum method m) { method_ = m;}
 
         const std::string& URI() { return URI_;}
-        void  set_URI(const std::string new_URI) { URI_ = new_URI;}
+        void  set_uri(const std::string new_URI) { URI_ = new_URI;}
      private:
         enum method method_;
         std::string URI_;
@@ -157,9 +159,17 @@ namespace http
   class Response
   {
     public:
-        enum status status;
-        void set_body(const std::string&);
-        void set_body(const std::string&&);
+        void set_status(status code) { status_code_ = code;}
+        void set_body(std::string&& new_body)
+        {
+            body_ = new_body;
+        }
+        const std::string& header() const noexcept;
+        const std::string& body()   const noexcept {return body_;}
+              status get_status()   const noexcept {return status_code_;}
+    private:
+        status status_code_;
+        std::string body_;
   };
 
     struct parse_error : std::invalid_argument
